@@ -25,6 +25,8 @@ class QuestionAnsweringBot:
         self.key = os.getenv('AI_SERVICE_KEY')
         self.project_name = os.getenv('QA_PROJECT_NAME', 'LearnFAQ')
         self.deployment_name = os.getenv('QA_DEPLOYMENT_NAME', 'production')
+        self.default_confidence_threshold = float(os.getenv('QA_CONFIDENCE_THRESHOLD', '0.7'))
+        self.top_answers = int(os.getenv('QA_TOP_ANSWERS', '3'))
         
         # Validate configuration
         if not self.endpoint or not self.key:
@@ -40,24 +42,29 @@ class QuestionAnsweringBot:
             credential=self.credential
         )
     
-    def get_answer(self, question, confidence_threshold=0.3):
+    def get_answer(self, question, confidence_threshold=None):
         """
         Get an answer for the given question.
         
         Args:
             question: The question to ask
-            confidence_threshold: Minimum confidence score (0-1)
+            confidence_threshold: Minimum confidence score (0-1). 
+                                 If None, uses the configured default.
             
         Returns:
             tuple: (answer, confidence) or (None, 0) if no answer found
         """
         try:
+            # Use configured threshold if none provided
+            if confidence_threshold is None:
+                confidence_threshold = self.default_confidence_threshold
+            
             # Query the knowledge base
             response = self.client.get_answers(
                 question=question,
                 project_name=self.project_name,
                 deployment_name=self.deployment_name,
-                top=3,
+                top=self.top_answers,
                 confidence_threshold=confidence_threshold
             )
             
